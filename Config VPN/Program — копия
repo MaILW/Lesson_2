@@ -1,0 +1,115 @@
+﻿using System;
+using System.IO;
+using System.Collections.Generic;
+
+namespace Config_VPN
+{
+    class ParsConfVPN
+    {
+        private string[][] conf = new string[0][];
+        private string[] PathFileConfig()
+        {
+            string[] names = Directory.GetFiles(@"D:\MaILW\Documents\Visual Studio 2019\Projects\Config VPN\Config");
+            return names;
+        }
+        private void PrintHelp()
+        {
+            Console.WriteLine("\n");
+            for (int i = 0; i < conf.Length; i++)
+            {
+               
+                   Console.WriteLine(conf[i][0]);
+                
+              
+            }
+            Console.WriteLine("\n");
+        }
+        private void ReadFile()
+        {
+            
+            foreach (string a in PathFileConfig())
+            {
+                StreamReader reader = new StreamReader(a);
+                string newLine;
+                int k = 0;
+                while (reader.EndOfStream == false)
+                {
+                    if ((newLine = reader.ReadLine()) != "")
+                    {
+                        if (newLine.StartsWith("#") || newLine.StartsWith(";")) continue;
+                        Array.Resize(ref conf, conf.Length + 1);
+                        conf[k] = newLine.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                        k++;
+                    }
+                }
+                reader.Dispose();
+                reader.Close();
+
+            }
+            
+            
+            
+        }
+        /// <summary>
+        /// comment
+        /// </summary>
+        public void FindParamValue()
+        {
+            ReadFile();
+            do
+            {
+                string target = EnterParam();
+                foreach (string[] param in conf)
+                {
+                    if (target == param[0])
+                    {
+                        Console.Write("Параметр: " + param[0] + "\tзначение: ");
+                        if (param.Length == 1) Console.WriteLine(" отсутствует.");
+                        for (int i = 1; i < param.Length; i++) Console.Write( param[i] + " ");
+                    }
+                }
+                Console.Write("\nДля выхода нажмите q: ");
+            } while(Console.ReadLine() != "q");
+            
+        }
+        private string EnterParam()
+        {
+            string parametr;
+            bool notFoundParam = true;
+            do
+            {
+                Console.Write("\nВведите интересущей параметр: ");
+                parametr = Console.ReadLine();
+
+                foreach (string[] param in conf)
+                {
+                    if (parametr == param[0])
+                    {
+                        notFoundParam = false;
+                        break;
+                    }
+                }
+                if (notFoundParam == true)
+                {
+                    Console.WriteLine("Параметр отсутсвует. Проверьте правильность ввода.\nЧтобы просмотреть список доступных устройств введите help.\t");
+
+                    if (Console.ReadLine() == "help") PrintHelp();
+
+                }
+            } while (notFoundParam == true);
+            return parametr;
+        }
+    }
+    class Program
+    {
+
+        static void Main(string[] args)
+        {
+           
+           
+            ParsConfVPN a = new ParsConfVPN();
+            a.FindParamValue();
+           
+        }
+    }
+}
