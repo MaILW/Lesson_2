@@ -2,8 +2,33 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <RootNamespace>Config_VPN</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Appp.Designer.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="AppData.xsc" />
+    <None Remove="AppData.xsd" />
+    <None Remove="AppData.xss" />
+    <None Remove="Appp.xsc" />
+    <None Remove="Appp.xsd" />
+    <None Remove="Appp.xss" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.7.0" />
+    <PackageReference Include="System.Management" Version="4.7.0" />
+    <PackageReference Include="System.Security.Permissions" Version="4.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="MySql.Data">
+      <HintPath>C:\Program Files (x86)\MySQL\Connector NET 8.0\Assemblies\v4.5.2\MySql.Data.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 
 </Project>

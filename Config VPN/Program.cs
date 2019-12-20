@@ -1,11 +1,13 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
-
+using MySql.Data.MySqlClient;
 namespace Config_VPN
 {
     class ParsConfVPN
     {
+        public delegate void ParsConfHandler(string changes);
+        public event ParsConfHandler Action;
         //private string[][] conf = new string[0][];
         private string[] PathFileConfig()
         {
@@ -109,7 +111,11 @@ namespace Config_VPN
                     notFoundParam = true;
                     Console.Write("\nВведите интересущей параметр: ");
                     parametr = Console.ReadLine();
-
+                    if (parametr.Contains("\t"))
+                    {
+                       parametr =  parametr.Replace("\t", "");
+                    }
+                    parametr = parametr.Trim();
                     foreach (string[] param in conf)
                     {
                         if (parametr == param[0])
@@ -124,15 +130,12 @@ namespace Config_VPN
                     }
                     if (notFoundParam == true)
                     {
-                        Console.WriteLine("Параметр отсутсвует. Проверьте правильность ввода.\nЧтобы просмотреть список доступных устройств введите help или fullhelp.\t");
+                        Console.WriteLine("Параметр отсутсвует. Проверьте правильность ввода.\nЧтобы просмотреть список доступных устройств введите help.\t");
 
                        
                         switch (Console.ReadLine())
                         {
                             case "help":
-                                PrintHelp(conf);
-                                break;
-                            case "fullhelp":
                                 PrintFullConf(conf);
                                 break;
                             default:
@@ -148,8 +151,7 @@ namespace Config_VPN
                     SetParamValue(parametr);
                 }
                 Console.WriteLine("\nДля выхода нажмите ESC.");
-            } while (Console.ReadKey().Key != ConsoleKey.Escape);
-            
+            } while (Console.ReadKey(true).Key != ConsoleKey.Escape);
         }
 
         private void SetParamValue(string parametr)
@@ -184,13 +186,14 @@ namespace Config_VPN
             for (int i = 1; i < workLines.Length; i++)
                 Console.Write(workLines[i] + " ");
                 Console.Write("\nВведите новое значение: ");
-
+            string lastParam = allConfig[p];
 
             if (workLines.Length == 1)
             {
                 do
                 {
                     newValue = Console.ReadLine();
+
                     if (newValue == "")
                     {
                         Console.WriteLine("Поле не может быть пустым. Повторите ввод.");
@@ -216,15 +219,24 @@ namespace Config_VPN
                             continue;
                         }
                     }
+                    
                     newValue = newValue.Trim();
+                    if(newValue.Contains(" "))
+                    {
+                        newValue = newValue.Replace(" ", "_");
+                    }
+                    Console.WriteLine("New parametr: "+newValue);
+                    if(newValue.StartsWith('#')|| newValue.StartsWith(';')||newValue.Contains('\t'))
+                    {
+                        Console.WriteLine("Ты чё такой тупой? Вот зачем тебе это надо?");
+                        continue;
+                    }
                     allConfig[p] = newValue + " " + localComment;
                     allConfig[p] = allConfig[p].Trim();
+                    Action?.Invoke($"Last parametr: {lastParam}. New parametr = {newValue}");
                     File.WriteAllLines(PathFileConfig()[0], allConfig);
                     break;
                 } while (true);
-               
-
-               
             }
             else
             {
@@ -257,8 +269,14 @@ namespace Config_VPN
                         }
                     }
                     newValue = newValue.Trim();
+                    if (newValue.Contains('#') || newValue.Contains(';') || newValue.Contains('\t')) 
+                    {
+                        Console.WriteLine("Ты чё такой тупой? Вот зачем тебе это надо?");
+                        continue;
+                    }
                     allConfig[p] = workLines[0] + " " + newValue + " " + localComment;
                     allConfig[p] = allConfig[p].Trim();
+                    Action?.Invoke($"Last parametr: {lastParam}. New parametr: {workLines[0] + " " + newValue}");
                     File.WriteAllLines(PathFileConfig()[0], allConfig);
                     break;
                 } while (true);
@@ -271,10 +289,54 @@ namespace Config_VPN
 
         static void Main(string[] args)
         {
-           
-           
-            ParsConfVPN a = new ParsConfVPN();
-            a.FindParamValue();
+            Autentification.Action += Config_VPN.Logs.Loging_Changes;
+            do
+            {
+                Console.Write("Введите логин: ");
+                string username = Console.ReadLine();
+
+                Console.Write("Введите пароль: ");
+                string password = "";
+
+
+                do
+                {
+                    ConsoleKeyInfo ski;
+                    ski = Console.ReadKey(true);
+                    if (ski.Key == ConsoleKey.Enter)
+                    {
+                        break;
+                    }
+                    if (ski.Key == ConsoleKey.Backspace)
+                    {
+                        Console.Write("\b \b");
+                        if (password.Length != 0)
+                        {
+                            password = password.Remove(password.Length - 1);
+                        }
+                    }
+                    if (ski.KeyChar != '\0' && ski.KeyChar != '\b' && ski.KeyChar != '\t')
+                    {
+                        Console.ForegroundColor = ConsoleColor.DarkMagenta;
+                        Console.Write("*");
+                        password += ski.KeyChar;
+                        Console.ResetColor();
+                    }
+
+                } while (true);
+                Console.WriteLine();
+                Config_VPN.Logs.User = username;
+                
+                if (Autentification.LogIn(username,password))
+                {
+                    ParsConfVPN a = new ParsConfVPN();
+                    a.Action += Logs.Loging_Changes;
+                    a.FindParamValue();
+                    Console.WriteLine(username + " вышел из системы.");
+                    Autentification.LogOut();
+                }
+                Console.WriteLine("\nДля выхода из программы нажмите ESC.");
+            } while (Console.ReadKey(true).Key != ConsoleKey.Escape);
            
         }
     }
